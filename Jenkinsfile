@@ -3,8 +3,6 @@ node {
 
     stage('Build') {
         docker.image('composer:2').inside('-u root --entrypoint=""') {
-            sh 'apt-get update || true'
-            sh 'apt-get install -y git unzip libpng-dev || true'
             sh 'git config --global --add safe.directory /var/jenkins_home/workspace/laravel-dev'
             sh 'composer install --ignore-platform-reqs'
         }
@@ -12,5 +10,23 @@ node {
 
     stage('Test') {
         sh 'echo "Build berhasil"'
+    }
+
+    stage('Deploy') {
+        docker.image('alpine:3.20').inside('-u root --entrypoint=""') {
+            sh 'apk add --no-cache openssh rsync'
+
+            sshagent(credentials: ['prod-key']) {
+                sh 'mkdir -p ~/.ssh'
+                sh 'ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts'
+
+                sh '''
+                rsync -avz --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
+                --exclude=.git \
+                --exclude=node_modules \
+                --exclude=vendor
+                '''
+            }
+        }
     }
 }
