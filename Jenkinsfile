@@ -1,30 +1,47 @@
-node {
-    checkout scm
+pipeline {
+    agent any
 
-    stage('Build') {
-        docker.image('composer:2').inside('-u root --entrypoint=""') {
-            sh 'git config --global --add safe.directory /var/jenkins_home/workspace/laravel-dev'
-            sh 'composer install --ignore-platform-reqs'
+    environment {
+        PROD_HOST = '54.251.5.36'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    docker.image('composer:2').inside('-u root') {
+                        sh 'git config --global --add safe.directory $WORKSPACE'
+                        sh 'composer install --ignore-platform-reqs'
+                    }
+                }
+            }
         }
-    }
 
-    stage('Test') {
-        sh 'echo "Build berhasil"'
-    }
+        stage('Testing') {
+            steps {
+                sh 'echo Build berhasil'
+            }
+        }
 
-    stage('Deploy') {
-        docker.image('composer:2').inside('-u root --entrypoint=""') {
-            sshagent(credentials: ['prod-key']) {
-                sh '''
-                mkdir -p ~/.ssh
-                chmod 700 ~/.ssh
-                ssh-keyscan -T 10 -H $PROD_HOST >> ~/.ssh/known_hosts || true
-                ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$PROD_HOST "mkdir -p /home/ubuntu/prod.kelasdevops.xyz"
-                rsync -avz --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
-                  --exclude=.git \
-                  --exclude=node_modules \
-                  --exclude=vendor
-                '''
+        stage('Deploy') {
+            steps {
+                script {
+                    docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
+                        sshagent(credentials: ['ssh-prod']) {
+                            sh '''
+                                mkdir -p ~/.ssh
+                                chmod 700 ~/.ssh
+                                ssh-keyscan -H "$PROD_HOST" >> ~/.ssh/known_hosts
+
+                                rsync -rav --delete ./ \
+                                ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
+                                --exclude=.env \
+                                --exclude=storage \
+                                --exclude=.git
+                            '''
+                        }
+                    }
+                }
             }
         }
     }
