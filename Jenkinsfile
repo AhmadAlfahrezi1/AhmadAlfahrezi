@@ -24,23 +24,25 @@ pipeline {
         }
 
         stage('Deploy') {
-    steps {
-        script {
-            docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
-                sshagent(credentials: ['ubuntu']) {
-                    sh '''
-                        mkdir -p /root/.ssh
-                        chmod 700 /root/.ssh
+            steps {
+                script {
+                    docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
+                        sshagent(credentials: ['ubuntu']) {
+                            sh '''
+                                mkdir -p /root/.ssh
+                                chmod 700 /root/.ssh
 
-                        ssh-keyscan -T 10 -H "$PROD_HOST" >> /root/.ssh/known_hosts || true
+                                ssh-keyscan -T 10 -H "$PROD_HOST" >> /root/.ssh/known_hosts || true
 
-                        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$PROD_HOST "mkdir -p /home/ubuntu/prod.kelasdevops.xyz"
+                                ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$PROD_HOST "mkdir -p /home/ubuntu/prod.kelasdevops.xyz"
 
-                        rsync -rav --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
-                        --exclude=.env \
-                        --exclude=storage \
-                        --exclude=.git
-                    '''
+                                rsync -rav --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
+                                --exclude=.env \
+                                --exclude=storage \
+                                --exclude=.git
+                            '''
+                        }
+                    }
                 }
             }
         }
