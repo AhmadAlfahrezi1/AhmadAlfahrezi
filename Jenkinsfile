@@ -3,8 +3,10 @@ node {
  checkout scm
 
  stage("Build"){
-  docker.image('shippingdocker/php-composer:7.4').inside('-u root') {
-   sh 'rm -f composer.lock'
+  docker.image('php:8.2-cli').inside('-u root') {
+   sh 'apt-get update && apt-get install -y git unzip libzip-dev zip curl openssh-client rsync'
+   sh 'docker-php-ext-install zip'
+   sh 'curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
    sh 'composer install'
   }
  }
@@ -20,7 +22,7 @@ node {
    sshagent(credentials: ['ssh-prod']) {
     sh 'mkdir -p ~/.ssh'
     sh 'ssh-keyscan -H "$PROD_HOST" > ~/.ssh/known_hosts'
-    sh 'rsync -rav --delete ./laravel/ faris@$PROD_HOST:/home/faris/prod.kelasdevops.xyz/AhmadAlfahrezi/ --exclude=.env --exclude=storage --exclude=.git'
+    sh 'rsync -rav --delete ./ faris@$PROD_HOST:/home/faris/prod.kelasdevops.xyz/AhmadAlfahrezi/ --exclude=.env --exclude=storage --exclude=.git'
    }
   }
  }
