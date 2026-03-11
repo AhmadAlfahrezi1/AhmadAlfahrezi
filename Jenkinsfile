@@ -1,50 +1,28 @@
-pipeline {
-    agent any
+node {
 
-    environment {
-        PROD_HOST = '54.251.5.36'
-    }
+ checkout scm
 
-    stages {
-        stage('Build') {
-            steps {
-                script {
-                    docker.image('composer:2').inside('-u root --entrypoint=""') {
-                        sh 'git config --global --add safe.directory $WORKSPACE'
-                        sh 'composer install --ignore-platform-reqs'
-                    }
-                }
-            }
-        }
+ stage("Build"){
+  docker.image('shippingdocker/php-composer:7.4').inside('-u root') {
+   sh 'rm -f composer.lock'
+   sh 'composer install'
+  }
+ }
 
-        stage('Testing') {
-            steps {
-                sh 'echo Build berhasil'
-            }
-        }
+ stage("Testing"){
+  docker.image('ubuntu').inside('-u root') {
+   sh 'echo "Ini adalah test"'
+  }
+ }
 
-        stage('Deploy') {
-            steps {
-                script {
-                    docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
-                        sshagent(credentials: ['ssh-prod']) {
-                            sh '''
-                                mkdir -p /root/.ssh
-                                chmod 700 /root/.ssh
+ stage("Deploy"){
+  docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
+   sshagent(credentials: ['ssh-prod']) {
+    sh 'mkdir -p ~/.ssh'
+    sh 'ssh-keyscan -H "$PROD_HOST" > ~/.ssh/known_hosts'
+    sh 'rsync -rav --delete ./laravel/ faris@$PROD_HOST:/home/faris/prod.kelasdevops.xyz/AhmadAlfahrezi/ --exclude=.env --exclude=storage --exclude=.git'
+   }
+  }
+ }
 
-                                ssh-keyscan -T 10 -H "$PROD_HOST" >> /root/.ssh/known_hosts || true
-
-                                ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$PROD_HOST "mkdir -p /home/ubuntu/prod.kelasdevops.xyz"
-
-                                rsync -rav --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
-                                --exclude=.env \
-                                --exclude=storage \
-                                --exclude=.git
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
