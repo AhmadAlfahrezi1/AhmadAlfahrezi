@@ -13,16 +13,17 @@ node {
     }
 
     stage('Deploy') {
-    docker.image('composer:2').inside('-u root --entrypoint=""') {
-        sh 'mkdir -p ~/.ssh'
-        sh 'ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts'
-        sshagent(credentials: ['prod-key']) {
-            sh '''
-            rsync -avz --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude=vendor
-            '''
+        docker.image('composer:2').inside('-u root --entrypoint=""') {
+            sshagent(credentials: ['prod-key']) {
+                sh 'mkdir -p ~/.ssh'
+                sh 'ssh-keyscan -H $PROD_HOST >> ~/.ssh/known_hosts'
+                sh '''
+                rsync -avz --delete ./ ubuntu@$PROD_HOST:/home/ubuntu/prod.kelasdevops.xyz/ \
+                --exclude=.git \
+                --exclude=node_modules \
+                --exclude=vendor
+                '''
+            }
         }
     }
 }
