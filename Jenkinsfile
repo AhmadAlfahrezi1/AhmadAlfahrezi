@@ -9,7 +9,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    docker.image('composer:2').inside('-u root') {
+                    docker.image('composer:2').inside('-u root --entrypoint=""') {
                         sh 'git config --global --add safe.directory $WORKSPACE'
                         sh 'composer install --ignore-platform-reqs'
                     }
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
-                        sshagent(credentials: ['ubuntu']) {
+                        sshagent(credentials: ['ssh-prod']) {
                             sh '''
                                 mkdir -p /root/.ssh
                                 chmod 700 /root/.ssh
