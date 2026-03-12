@@ -12,8 +12,6 @@ node {
         docker-php-ext-install gd zip mbstring
         curl -sS https://getcomposer.org/installer | php
         mv composer.phar /usr/local/bin/composer
-        php -v
-        composer --version
         composer install
       '''
     }
@@ -31,12 +29,11 @@ node {
   stage("Deploy") {
     docker.image('agung3wi/alpine-rsync:1.1').inside('-u root') {
       sshagent(credentials: ['ssh-prod']) {
-        withEnv(['PROD_HOST=prod.kelasdevops.xyz']) {
+        withEnv(['PROD_HOST=172.30.85.222']) {
           sh '''
             set -eux
-            echo "PROD_HOST=$PROD_HOST"
             mkdir -p ~/.ssh
-            ssh-keyscan -H "$PROD_HOST" >> ~/.ssh/known_hosts
+            ssh-keyscan -H "$PROD_HOST" >> ~/.ssh/known_hosts || true
             ssh -o StrictHostKeyChecking=no faris@$PROD_HOST 'mkdir -p /home/faris/prod.kelasdevops.xyz/AhmadAlfahrezi && echo SSH_OK'
             rsync -rav --delete --exclude=".env" ./ faris@$PROD_HOST:/home/faris/prod.kelasdevops.xyz/AhmadAlfahrezi/
           '''
