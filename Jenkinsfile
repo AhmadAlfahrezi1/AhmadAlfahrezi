@@ -4,10 +4,21 @@ node {
 
  stage("Build"){
   docker.image('php:8.2-cli').inside('-u root') {
-   sh 'apt-get update && apt-get install -y git unzip libzip-dev zip curl openssh-client rsync'
-   sh 'docker-php-ext-install zip'
-   sh 'curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer'
-   sh 'composer install'
+   sh '''
+     apt-get update && apt-get install -y \
+       git unzip libzip-dev zip curl openssh-client rsync \
+       libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+       libonig-dev libxml2-dev
+
+     docker-php-ext-configure gd --with-freetype --with-jpeg
+     docker-php-ext-install zip gd mbstring
+
+     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+     git config --global --add safe.directory $PWD
+
+     composer install
+   '''
   }
  }
 
