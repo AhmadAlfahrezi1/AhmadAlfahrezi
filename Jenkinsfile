@@ -3,19 +3,10 @@ node {
   checkout scm
 
   stage("Build") {
-    docker.image('php:8.2-cli').inside('-u root') {
+    docker.image('my-php-laravel:8.2').inside('-u root') {
       sh '''
         set -eux
-        apt-get update
-        apt-get install -y git unzip zip curl libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libonig-dev libxml2-dev
-
-        docker-php-ext-configure gd --with-freetype --with-jpeg
-        docker-php-ext-install gd zip mbstring
-
-        curl -sS https://getcomposer.org/installer | php
-        mv composer.phar /usr/local/bin/composer
-
-        composer install
+        composer install --no-interaction --prefer-dist --optimize-autoloader
       '''
     }
   }
